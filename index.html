@@ -39,7 +39,7 @@
 </head>
 <body>
   <h1>Flashcard Quiz</h1>
-  <textarea id="input" placeholder="Enter flashcards: word,definition per line"></textarea><br />
+  <textarea id="input" placeholder="Enter flashcards: word<tab>definition or word,definition per line"></textarea><br />
   <button onclick="startQuiz()">匯入並開始</button>
   <button onclick="resetProgress()">重置進度</button>
 
@@ -63,8 +63,9 @@
     function startQuiz() {
       const input = document.getElementById('input').value.trim();
       cards = input.split('\n').map(line => {
-        const [term, def] = line.split(',');
-        return { term: term.trim(), def: def.trim() };
+        let parts = line.split(/\t|,/);
+        const [term, def] = parts;
+        return { term: term?.trim(), def: def?.trim() };
       }).filter(c => c.term && c.def);
 
       shuffle(cards);

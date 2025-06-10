@@ -26,9 +26,12 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .progress, .stats {
+    .progress, .stats, .error {
       margin-top: 10px;
       font-weight: bold;
+    }
+    .error {
+      color: red;
     }
     .options button {
       display: block;
@@ -42,6 +45,7 @@
   <textarea id="input" placeholder="Paste Quizlet-style input: word[TAB]definition"></textarea><br />
   <button onclick="startQuiz()">匯入並開始</button>
   <button onclick="resetProgress()">重置進度</button>
+  <div class="error" id="error-msg"></div>
 
   <div class="card" id="flashcard" style="display:none">
     <div id="term"></div>
@@ -62,18 +66,28 @@
 
     function startQuiz() {
       const input = document.getElementById('input').value.trim();
-      cards = input.split('\n').map((line, index) => {
+      const lines = input.split('\n');
+      const errors = [];
+
+      cards = lines.map((line, index) => {
         const parts = line.split('\t');
         if (parts.length !== 2) {
-          console.warn(`跳過第 ${index + 1} 行，格式錯誤:`, line);
+          errors.push(`第 ${index + 1} 行格式錯誤：${line}`);
           return null;
         }
         const [term, def] = parts;
         return { term: term.trim(), def: def.trim() };
       }).filter(Boolean);
 
+      const errorMsg = document.getElementById('error-msg');
+      if (errors.length > 0) {
+        errorMsg.innerHTML = errors.join('<br>');
+      } else {
+        errorMsg.innerHTML = '';
+      }
+
       if (cards.length === 0) {
-        alert("匯入失敗，請確認資料格式是否為：單字[TAB]解釋");
+        errorMsg.innerHTML += '<br>⚠️ 無法匯入任何有效資料，請確認格式是否為「單字[TAB]解釋」';
         return;
       }
 
@@ -154,9 +168,9 @@
           total++;
           if (opt === card.def) {
             correct++;
-            alert('✔️ 正確');
+            document.getElementById('error-msg').innerHTML = '✔️ 正確';
           } else {
-            alert(`❌ 錯誤：正確答案是「${card.def}」`);
+            document.getElementById('error-msg').innerHTML = `❌ 錯誤：正確答案是「${card.def}」`;
           }
           current++;
           showCard();

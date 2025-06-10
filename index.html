@@ -1,48 +1,93 @@
 <!DOCTYPE html>
-<html lang="zh">
-<head><meta charset="UTF-8"><title>我的閃卡小工具</title>
-<style>
-body { font-family: sans-serif; max-width:400px; margin:50px auto; }
-#inputArea, #flashcard { margin-bottom:20px; }
-textarea { width:100%; height:120px; }
-#flashcard { font-size:2em; text-align:center; }
-button { padding:10px; font-size:1em; margin:5px; }
-</style>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcards</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    textarea {
+      width: 90%;
+      height: 150px;
+    }
+    #card {
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      width: 300px;
+      min-height: 100px;
+    }
+    button {
+      margin: 5px;
+    }
+  </style>
 </head>
 <body>
+  <h1>Flashcard Quiz</h1>
+  <p>輸入單字（格式：`單字,解釋` 每行一個）</p>
+  <textarea id="input" placeholder="example\ncat,貓\ndog,狗"></textarea><br/>
+  <button onclick="startQuiz()">匯入並開始</button>
 
-<div id="inputArea">
-  <h3>貼入單字表（term,definition）：</h3>
-  <textarea id="inputText" placeholder="apple,蘋果\nbook,書"></textarea><br>
-  <button onclick="loadVocab()">匯入並開始</button>
-</div>
+  <div id="card" style="display:none;">
+    <h2 id="term">單字</h2>
+    <p id="definition" style="display:none;">解釋</p>
+    <button onclick="showDefinition()">顯示解釋</button>
+    <button onclick="nextCard()">下一題</button>
+    <p id="progress">0 / 0</p>
+  </div>
 
-<div id="flashcard" style="display:none;">
-  <div id="word">單字</div>
-  <div id="definition" style="color:gray;"></div>
-  <button onclick="showDefinition()">顯示解釋</button>
-  <button onclick="nextCard()">下一題</button>
-</div>
+  <script>
+    let cards = [];
+    let currentIndex = 0;
+    let shown = new Set();
 
-<script>
-let vocab = [], current = -1;
-function loadVocab() {
-  const raw = document.getElementById('inputText').value.trim().split('\n');
-  vocab = raw.map(l => { const p=l.split(/[,\;\t]/); return {word:p[0],def:p[1]||''}; });
-  if (vocab.length===0) return alert('請貼入至少一個單字');
-  document.getElementById('inputArea').style.display='none';
-  document.getElementById('flashcard').style.display='block';
-  nextCard();
-}
-function nextCard() {
-  current = Math.floor(Math.random()*vocab.length);
-  document.getElementById('word').textContent = vocab[current].word;
-  document.getElementById('definition').textContent = '';
-}
-function showDefinition() {
-  if (current>=0) document.getElementById('definition').textContent = vocab[current].def;
-}
-</script>
+    function startQuiz() {
+      const input = document.getElementById("input").value.trim();
+      cards = input.split("\n").map(line => {
+        const [term, def] = line.split(",");
+        return { term: term?.trim(), def: def?.trim() };
+      }).filter(c => c.term && c.def);
 
+      if (cards.length === 0) {
+        alert("請輸入正確格式的單字");
+        return;
+      }
+
+      shown.clear();
+      currentIndex = 0;
+      document.getElementById("card").style.display = "block";
+      nextCard();
+    }
+
+    function showDefinition() {
+      document.getElementById("definition").style.display = "block";
+    }
+
+    function nextCard() {
+      if (shown.size >= cards.length) {
+        alert("已完成所有題目！");
+        return;
+      }
+
+      let i;
+      do {
+        i = Math.floor(Math.random() * cards.length);
+      } while (shown.has(i));
+
+      shown.add(i);
+      currentIndex++;
+
+      const card = cards[i];
+      document.getElementById("term").innerText = card.term;
+      document.getElementById("definition").innerText = card.def;
+      document.getElementById("definition").style.display = "none";
+      document.getElementById("progress").innerText = `${shown.size} / ${cards.length}`;
+    }
+  </script>
 </body>
 </html>
+

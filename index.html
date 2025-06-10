@@ -39,7 +39,7 @@
 </head>
 <body>
   <h1>Flashcard Quiz</h1>
-  <textarea id="input" placeholder="Enter flashcards: word<tab>definition or word,definition per line"></textarea><br />
+  <textarea id="input" placeholder="Paste Quizlet-style input: word[TAB]definition"></textarea><br />
   <button onclick="startQuiz()">匯入並開始</button>
   <button onclick="resetProgress()">重置進度</button>
 
@@ -58,15 +58,24 @@
     let current = 0;
     let correct = 0;
     let total = 0;
-    let isMCMode = true; // 選擇題模式
+    let isMCMode = true;
 
     function startQuiz() {
       const input = document.getElementById('input').value.trim();
-      cards = input.split('\n').map(line => {
-        let parts = line.split(/\t|,/);
+      cards = input.split('\n').map((line, index) => {
+        const parts = line.split('\t');
+        if (parts.length !== 2) {
+          console.warn(`跳過第 ${index + 1} 行，格式錯誤:`, line);
+          return null;
+        }
         const [term, def] = parts;
-        return { term: term?.trim(), def: def?.trim() };
-      }).filter(c => c.term && c.def);
+        return { term: term.trim(), def: def.trim() };
+      }).filter(Boolean);
+
+      if (cards.length === 0) {
+        alert("匯入失敗，請確認資料格式是否為：單字[TAB]解釋");
+        return;
+      }
 
       shuffle(cards);
       current = 0;

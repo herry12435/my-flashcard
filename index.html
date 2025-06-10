@@ -2,92 +2,158 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flashcards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard Quiz</title>
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      margin: 20px;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f7f7f7;
     }
     textarea {
-      width: 90%;
-      height: 150px;
-    }
-    #card {
-      margin: 20px auto;
-      padding: 20px;
-      border: 1px solid #ccc;
-      width: 300px;
-      min-height: 100px;
+      width: 100%;
+      height: 100px;
     }
     button {
-      margin: 5px;
+      margin: 5px 5px 10px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .card {
+      margin-top: 20px;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .progress, .stats {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .options button {
+      display: block;
+      width: 100%;
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
   <h1>Flashcard Quiz</h1>
-  <p>輸入單字（格式：`單字,解釋` 每行一個）</p>
-  <textarea id="input" placeholder="example\ncat,貓\ndog,狗"></textarea><br/>
+  <textarea id="input" placeholder="Enter flashcards: word,definition per line"></textarea><br />
   <button onclick="startQuiz()">匯入並開始</button>
+  <button onclick="resetProgress()">重置進度</button>
 
-  <div id="card" style="display:none;">
-    <h2 id="term">單字</h2>
-    <p id="definition" style="display:none;">解釋</p>
-    <button onclick="showDefinition()">顯示解釋</button>
+  <div class="card" id="flashcard" style="display:none">
+    <div id="term"></div>
+    <button onclick="showAnswer()">顯示解釋</button>
+    <div id="definition" style="margin-top:10px; display:none;"></div>
+    <div class="options" id="mc-options" style="display:none;"></div>
     <button onclick="nextCard()">下一題</button>
-    <p id="progress">0 / 0</p>
+    <div class="progress" id="progress"></div>
+    <div class="stats" id="stats"></div>
   </div>
 
   <script>
     let cards = [];
-    let currentIndex = 0;
-    let shown = new Set();
+    let current = 0;
+    let correct = 0;
+    let total = 0;
+    let isMCMode = true; // 選擇題模式
 
     function startQuiz() {
-      const input = document.getElementById("input").value.trim();
-      cards = input.split("\n").map(line => {
-        const [term, def] = line.split(",");
-        return { term: term?.trim(), def: def?.trim() };
+      const input = document.getElementById('input').value.trim();
+      cards = input.split('\n').map(line => {
+        const [term, def] = line.split(',');
+        return { term: term.trim(), def: def.trim() };
       }).filter(c => c.term && c.def);
 
-      if (cards.length === 0) {
-        alert("請輸入正確格式的單字");
-        return;
-      }
-
-      shown.clear();
-      currentIndex = 0;
-      document.getElementById("card").style.display = "block";
-      nextCard();
+      shuffle(cards);
+      current = 0;
+      correct = 0;
+      total = 0;
+      document.getElementById('flashcard').style.display = 'block';
+      showCard();
     }
 
-    function showDefinition() {
-      document.getElementById("definition").style.display = "block";
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function showCard() {
+      if (current >= cards.length) {
+        document.getElementById('term').innerText = "已完成所有單字！";
+        document.getElementById('definition').style.display = 'none';
+        document.getElementById('mc-options').style.display = 'none';
+        updateProgress();
+        return;
+      }
+      const card = cards[current];
+      document.getElementById('term').innerText = card.term;
+      document.getElementById('definition').innerText = card.def;
+      document.getElementById('definition').style.display = 'none';
+      if (isMCMode) {
+        showMCOptions(card);
+      }
+      updateProgress();
+    }
+
+    function showAnswer() {
+      document.getElementById('definition').style.display = 'block';
     }
 
     function nextCard() {
-      if (shown.size >= cards.length) {
-        alert("已完成所有題目！");
-        return;
+      current++;
+      showCard();
+    }
+
+    function updateProgress() {
+      document.getElementById('progress').innerText = `${Math.min(current, cards.length)} / ${cards.length}`;
+      const percent = total ? ((correct / total) * 100).toFixed(1) : 0;
+      document.getElementById('stats').innerText = `正確率: ${correct}/${total} (${percent}%)`;
+    }
+
+    function resetProgress() {
+      current = 0;
+      correct = 0;
+      total = 0;
+      shuffle(cards);
+      showCard();
+    }
+
+    function showMCOptions(card) {
+      const container = document.getElementById('mc-options');
+      container.innerHTML = '';
+      container.style.display = 'block';
+
+      let options = [card.def];
+      while (options.length < 4 && options.length < cards.length) {
+        const other = cards[Math.floor(Math.random() * cards.length)].def;
+        if (!options.includes(other)) {
+          options.push(other);
+        }
       }
+      shuffle(options);
 
-      let i;
-      do {
-        i = Math.floor(Math.random() * cards.length);
-      } while (shown.has(i));
-
-      shown.add(i);
-      currentIndex++;
-
-      const card = cards[i];
-      document.getElementById("term").innerText = card.term;
-      document.getElementById("definition").innerText = card.def;
-      document.getElementById("definition").style.display = "none";
-      document.getElementById("progress").innerText = `${shown.size} / ${cards.length}`;
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.innerText = opt;
+        btn.onclick = () => {
+          total++;
+          if (opt === card.def) {
+            correct++;
+            alert('✔️ 正確');
+          } else {
+            alert(`❌ 錯誤：正確答案是「${card.def}」`);
+          }
+          current++;
+          showCard();
+        };
+        container.appendChild(btn);
+      });
     }
   </script>
 </body>
 </html>
-
